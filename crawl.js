@@ -22,25 +22,50 @@ async function scrapeProductTitlesAndPrices(url) {
   const dom = new JSDOM(html);
   const document = dom.window.document;
 
-  // 'adProduct_title__amInq' 클래스를 가진 div 태그 내의 모든 a 태그의 title 속성 값을 크롤링합니다.
-  const divs = Array.from(
-    document.querySelectorAll(
-      'div[class^="adProduct_"], div[class^="product_"]'
-    )
-  ); // '^=' 연산자는 클래스 이름이 특정 문자열로 시작하는 요소를 선택합니다.
-  const aTitles = divs.flatMap(div =>
-    Array.from(
-      div.querySelectorAll(
-        'a[class^="product_link__"], a[class^="adProduct_link__"]'
-      )
-    ).map(a => a.title)
-  ); // 각 div 태그 내의 모든 a 태그의 title 속성을 추출하여 배열로 만듭니다.
+  const product = [];
+  const adProduct = [];
 
-  let result = [];
-  for (let title of aTitles) {
-    if (title != "") result.push(title);
-  }
-  console.log(result);
+  const productDivs = Array.from(
+    document.querySelectorAll('div[class^="product_item"]')
+  );
+  const adProductDivs = Array.from(
+    document.querySelectorAll('div[class^="adProduct_item"]')
+  );
+
+  // '^=' 연산자는 클래스 이름이 특정 문자열로 시작하는 요소를 선택합니다.
+  productDivs.forEach(productDiv => {
+    const singleProduct = {};
+    Array.from(
+      productDiv.querySelectorAll('a[class^="product_link__"]')
+    ).forEach(title => {
+      singleProduct.title = title.textContent;
+    });
+    Array.from(productDiv.querySelectorAll('span[class^="price_num"]')).forEach(
+      price => {
+        singleProduct.price = price.textContent;
+      }
+    );
+    product.push(singleProduct);
+  });
+
+  adProductDivs.forEach(adProductDiv => {
+    const singleAdProduct = {};
+    Array.from(
+      adProductDiv.querySelectorAll('a[class^="adProduct_link__"]')
+    ).forEach(title => {
+      singleAdProduct.title = title.textContent;
+    });
+    Array.from(
+      adProductDiv.querySelectorAll('span[class^="price_num"]')
+    ).forEach(price => {
+      singleAdProduct.price = price.textContent;
+    });
+
+    adProduct.push(singleAdProduct);
+  });
+
+  console.log(product);
+  console.log(adProduct);
 }
 
 //autoscroll
