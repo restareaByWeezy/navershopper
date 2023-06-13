@@ -25,6 +25,11 @@ async function scrapeProductTitlesAndPrices(url) {
   const product = [];
   const adProduct = [];
 
+  //제품 개수
+  const totalProductCount = Number(
+    document.querySelector("span[class^='subFilter_num__']").textContent
+  );
+
   const productDivs = Array.from(
     document.querySelectorAll('div[class^="product_item"]')
   );
@@ -32,40 +37,79 @@ async function scrapeProductTitlesAndPrices(url) {
     document.querySelectorAll('div[class^="adProduct_item"]')
   );
 
-  // '^=' 연산자는 클래스 이름이 특정 문자열로 시작하는 요소를 선택합니다.
+  //NOTE: 일반 상품
   productDivs.forEach(productDiv => {
     const singleProduct = {};
+
+    //title
     Array.from(
       productDiv.querySelectorAll('a[class^="product_link__"]')
     ).forEach(title => {
       singleProduct.title = title.textContent;
     });
+
+    //price
     Array.from(productDiv.querySelectorAll('span[class^="price_num"]')).forEach(
       price => {
         singleProduct.price = price.textContent;
       }
     );
+
+    //mall
+    Array.from(
+      productDiv.querySelectorAll('a[class^="product_mall_"]')
+    ).forEach(mall => {
+      if (singleProduct.mall === undefined) singleProduct.mall = [];
+      singleProduct.mall.push(mall.textContent);
+    });
+
+    //img
+    Array.from(productDiv.querySelectorAll("a > img")).forEach(img => {
+      singleProduct.img = img.src;
+    });
+
     product.push(singleProduct);
   });
 
+  //NOTE: 광고 상품
   adProductDivs.forEach(adProductDiv => {
     const singleAdProduct = {};
+
+    //title
     Array.from(
       adProductDiv.querySelectorAll('a[class^="adProduct_link__"]')
     ).forEach(title => {
       singleAdProduct.title = title.textContent;
     });
+
+    //price
     Array.from(
       adProductDiv.querySelectorAll('span[class^="price_num"]')
     ).forEach(price => {
       singleAdProduct.price = price.textContent;
     });
 
+    //mall
+    Array.from(
+      adProductDiv.querySelectorAll('a[class^="product_mall_"]')
+    ).forEach(mall => {
+      if (singleAdProduct.mall === undefined) singleAdProduct.mall = [];
+      singleAdProduct.mall.push(mall.textContent);
+    });
+
+    //img
+    Array.from(adProductDiv.querySelectorAll("a > img")).forEach(img => {
+      singleAdProduct.img = img.src;
+    });
+
     adProduct.push(singleAdProduct);
   });
 
-  console.log(product);
-  console.log(adProduct);
+  console.log("product", product);
+  console.log("adProduct", adProduct);
+
+  console.log("products length", product.length);
+  console.log("adProducts length", adProduct.length);
 }
 
 //autoscroll
