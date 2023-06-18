@@ -2,14 +2,12 @@ const puppeteer = require("puppeteer");
 const jsdom = require("jsdom");
 const { JSDOM } = jsdom;
 
-scrapeProductTitlesAndPrices(
-  "https://search.shopping.naver.com/search/all?query=주얼리"
-);
+const product = [];
+const adProduct = [];
 
-async function scrapeProductTitlesAndPrices(url) {
-  const browser = await puppeteer.launch({ headless: false });
-  const page = await browser.newPage();
+let totalProductCount;
 
+async function scrapeProductTitlesAndPrices(url, page, product, adProduct) {
   await page.goto(url, { waitUntil: "networkidle0" }); // 네이버 쇼핑 메인페이지로 이동
 
   await autoScroll(page);
@@ -22,13 +20,12 @@ async function scrapeProductTitlesAndPrices(url) {
   const dom = new JSDOM(html);
   const document = dom.window.document;
 
-  const product = [];
-  const adProduct = [];
-
   //제품 개수
-  const totalProductCount = Number(
-    document.querySelector("span[class^='subFilter_num__']").textContent
-  );
+  if (totalProductCount === undefined) {
+    totalProductCount = Number(
+      document.querySelector("span[class^='subFilter_num__']").textContent
+    );
+  }
 
   const productDivs = Array.from(
     document.querySelectorAll('div[class^="product_item"]')
@@ -141,3 +138,37 @@ async function autoScroll(page) {
   });
   console.log("AUTO SCROLLING FINISHED");
 }
+
+// 데이터를 CSV 형식으로 변환
+function convertToCSV(data) {
+  const header = Object.keys(data[0]).join(",");
+  const rows = data.map(obj => Object.values(obj).join(","));
+  return `${header}\n${rows.join("\n")}`;
+}
+
+function saveDataToCSV(data, filename) {
+  const csvData = convertToCSV(data);
+  fs.writeFileSync(filename, csvData, "utf-8");
+  console.log(`Data saved to ${filename}`);
+}
+
+const mainFn = async () => {
+  const browser = await puppeteer.launch({ headless: false });
+  const page = await browser.newPage();
+
+  for (let i = 1; i <= 2; i++) {
+    console.log(i, "Page Crawl Start!");
+
+    await scrapeProductTitlesAndPrices(
+      `https://search.shopping.naver.com/search/all?pagingIndex=${i}&pagingSize=80&productSet=total&query=쥬얼리`,
+      page,
+      product,
+      adProduct
+    );
+  }
+
+  saveDataToCSV(product, "product_data.csv");
+  saveDataToCSV(adProduct, "adProduct_data.csv");
+};
+
+mainFn();
