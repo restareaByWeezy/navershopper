@@ -1,6 +1,7 @@
 const puppeteer = require("puppeteer");
 const jsdom = require("jsdom");
 const { JSDOM } = jsdom;
+const fs = require("fs");
 
 const product = [];
 const adProduct = [];
@@ -14,7 +15,6 @@ async function scrapeProductTitlesAndPrices(url, page, product, adProduct) {
 
   // 전체 HTML 코드를 가져옵니다.
   const html = await page.content();
-  await browser.close();
 
   // JSDOM을 사용하여 HTML 코드를 분석합니다.
   const dom = new JSDOM(html);
@@ -43,19 +43,50 @@ async function scrapeProductTitlesAndPrices(url, page, product, adProduct) {
       productDiv.querySelectorAll('a[class^="product_link__"]')
     ).forEach(title => {
       singleProduct.title = title.textContent;
+      //link
+      singleProduct.link = title.href;
+    });
+
+    //upload date
+    Array.from(
+      productDiv.querySelectorAll('span[class^="product_etc___"]')
+    ).forEach(etc => {
+      singleProduct.uploadDate = etc.textContent;
+    });
+
+    //zzim count
+    Array.from(
+      productDiv.querySelectorAll(
+        'span[class^="product_zzim__"] > em[class^="product_num__"]'
+      )
+    ).forEach(zzim => {
+      singleProduct.zzim = zzim.textContent;
     });
 
     //price
     Array.from(productDiv.querySelectorAll('span[class^="price_num"]')).forEach(
       price => {
+        //remove comma
+        price.textContent = price.textContent.replace(/,/g, "");
         singleProduct.price = price.textContent;
       }
     );
+
+    //category
+    // Array.from(
+    //   productDiv
+    //     .querySelectorAll('div[class^="product_depth__"]')
+    //     .forEach(category => {
+    //       singleProduct.category = category.textContent;
+    //     })
+    // );
 
     //mall
     Array.from(
       productDiv.querySelectorAll('a[class^="product_mall_"]')
     ).forEach(mall => {
+      //remove comma
+      mall.textContent = mall.textContent.replace(/,/g, "");
       if (singleProduct.mall === undefined) singleProduct.mall = [];
       singleProduct.mall.push(mall.textContent);
     });
@@ -77,20 +108,51 @@ async function scrapeProductTitlesAndPrices(url, page, product, adProduct) {
       adProductDiv.querySelectorAll('a[class^="adProduct_link__"]')
     ).forEach(title => {
       singleAdProduct.title = title.textContent;
+      //link
+      singleAdProduct.link = title.href;
+    });
+
+    //upload date
+    Array.from(
+      adProductDiv.querySelectorAll('span[class^="adProduct_etc___"]')
+    ).forEach(etc => {
+      singleAdProduct.uploadDate = etc.textContent;
+    });
+
+    //zzim count
+    Array.from(
+      adProductDiv.querySelectorAll(
+        'span[class^="adProduct_zzim__"] > em[class^="adProduct_num__"]'
+      )
+    ).forEach(zzim => {
+      singleAdProduct.zzim = zzim.textContent;
     });
 
     //price
     Array.from(
       adProductDiv.querySelectorAll('span[class^="price_num"]')
     ).forEach(price => {
+      //remove comma
+      price.textContent = price.textContent.replace(/,/g, "");
       singleAdProduct.price = price.textContent;
     });
 
+    //category
+    // Array.from(
+    //   adProductDiv
+    //     .querySelectorAll('div[class^="adProduct_depth__"]')
+    //     .forEach(category => {
+    //       singleAdProduct.category = category.textContent;
+    //     })
+    // );
+
     //mall
     Array.from(
-      adProductDiv.querySelectorAll('a[class^="product_mall_"]')
+      adProductDiv.querySelectorAll('a[class^="adProduct_mall_"]')
     ).forEach(mall => {
       if (singleAdProduct.mall === undefined) singleAdProduct.mall = [];
+      //remove comma
+      mall.textContent = mall.textContent.replace(/,/g, "");
       singleAdProduct.mall.push(mall.textContent);
     });
 
@@ -156,10 +218,14 @@ const mainFn = async () => {
   const browser = await puppeteer.launch({ headless: false });
   const page = await browser.newPage();
 
+  //페이지 어디서부터 어디까지 긁은건지 확인하기 위해
+  // i = 1페이지부터 2페이지까지 긁어보겠다.
   for (let i = 1; i <= 2; i++) {
     console.log(i, "Page Crawl Start!");
 
     await scrapeProductTitlesAndPrices(
+      //여기서 키워드 변경하면 됩니다.
+      //1장에 80개 들어감
       `https://search.shopping.naver.com/search/all?pagingIndex=${i}&pagingSize=80&productSet=total&query=쥬얼리`,
       page,
       product,
@@ -167,6 +233,9 @@ const mainFn = async () => {
     );
   }
 
+  await browser.close();
+
+  //csv 파일로 저장
   saveDataToCSV(product, "product_data.csv");
   saveDataToCSV(adProduct, "adProduct_data.csv");
 };
