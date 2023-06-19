@@ -95,6 +95,9 @@ async function scrapeProductTitlesAndPrices(url, page, product, adProduct) {
 
       if (textContent.includes("리뷰")) {
         singleProduct.review = textContent;
+        //remove 리뷰 and 별점
+        singleProduct.review = textContent.replace(/리뷰/g, "");
+        singleProduct.review = singleProduct.review.replace(/별점/g, "");
       }
 
       if (textContent.includes("찜하기")) {
@@ -113,6 +116,8 @@ async function scrapeProductTitlesAndPrices(url, page, product, adProduct) {
         singleProduct.upload = textContent.replace(/등록일/g, "");
       }
     });
+
+    singleProduct.isAd = "false";
 
     product.push(singleProduct);
   });
@@ -170,6 +175,9 @@ async function scrapeProductTitlesAndPrices(url, page, product, adProduct) {
 
       if (textContent.includes("리뷰")) {
         singleAdProduct.review = textContent;
+        //remove 리뷰 and 별점
+        singleAdProduct.review = textContent.replace(/리뷰/g, "");
+        singleAdProduct.review = singleAdProduct.review.replace(/별점/g, "");
       }
 
       if (textContent.includes("찜하기")) {
@@ -193,6 +201,8 @@ async function scrapeProductTitlesAndPrices(url, page, product, adProduct) {
     Array.from(adProductDiv.querySelectorAll("a > img")).forEach(img => {
       singleAdProduct.img = img.src;
     });
+
+    singleAdProduct.isAd = "true";
 
     adProduct.push(singleAdProduct);
   });
@@ -253,7 +263,7 @@ const mainFn = async () => {
 
   //페이지 어디서부터 어디까지 긁은건지 확인하기 위해
   // i = 1페이지부터 2페이지까지 긁어보겠다.
-  for (let i = 1; i <= 1; i++) {
+  for (let i = 1; i <= 10; i++) {
     console.log(i, "Page Crawl Start!");
 
     await scrapeProductTitlesAndPrices(
@@ -268,7 +278,11 @@ const mainFn = async () => {
 
   await browser.close();
 
+  //merge product and adProduct
+  const mergedProduct = adProduct.concat(product);
+
   //csv 파일로 저장
+  saveDataToCSV(mergedProduct, "total_product_data.csv");
   saveDataToCSV(product, "product_data.csv");
   saveDataToCSV(adProduct, "adProduct_data.csv");
 };
