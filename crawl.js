@@ -9,6 +9,7 @@ const adProduct = [];
 let totalProductCount;
 
 async function scrapeProductTitlesAndPrices(url, page, product, adProduct) {
+  await page.setDefaultNavigationTimeout(60000);
   await page.goto(url, { waitUntil: "networkidle0" }); // 네이버 쇼핑 메인페이지로 이동
 
   await autoScroll(page);
@@ -47,22 +48,6 @@ async function scrapeProductTitlesAndPrices(url, page, product, adProduct) {
       singleProduct.link = title.href;
     });
 
-    //upload date
-    Array.from(
-      productDiv.querySelectorAll('span[class^="product_etc___"]')
-    ).forEach(etc => {
-      singleProduct.uploadDate = etc.textContent;
-    });
-
-    //zzim count
-    Array.from(
-      productDiv.querySelectorAll(
-        'span[class^="product_zzim__"] > em[class^="product_num__"]'
-      )
-    ).forEach(zzim => {
-      singleProduct.zzim = zzim.textContent;
-    });
-
     //price
     Array.from(productDiv.querySelectorAll('span[class^="price_num"]')).forEach(
       price => {
@@ -73,13 +58,17 @@ async function scrapeProductTitlesAndPrices(url, page, product, adProduct) {
     );
 
     //category
-    // Array.from(
-    //   productDiv
-    //     .querySelectorAll('div[class^="product_depth__"]')
-    //     .forEach(category => {
-    //       singleProduct.category = category.textContent;
-    //     })
-    // );
+    Array.from(
+      productDiv.querySelectorAll(
+        'div[class^="product_depth__"] > span[class^="product_category__"]'
+      )
+    ).forEach(category => {
+      if (singleProduct.category === undefined) {
+        singleProduct.category = [];
+      }
+      singleProduct.category.push(category.textContent);
+    });
+    singleProduct.category = singleProduct.category.join(" > ");
 
     //mall
     Array.from(
@@ -94,6 +83,35 @@ async function scrapeProductTitlesAndPrices(url, page, product, adProduct) {
     //img
     Array.from(productDiv.querySelectorAll("a > img")).forEach(img => {
       singleProduct.img = img.src;
+    });
+
+    // Check additional conditions for fields
+    Array.from(
+      productDiv.querySelectorAll(
+        'a[class^="product_etc__"], span[class^="product_etc__"]'
+      )
+    ).forEach(etc => {
+      const textContent = etc.textContent;
+
+      if (textContent.includes("리뷰")) {
+        singleProduct.review = textContent;
+      }
+
+      if (textContent.includes("찜하기")) {
+        singleProduct.zzim = textContent;
+        //remove 찜하기
+        singleProduct.zzim = textContent.replace(/찜하기/g, "");
+      }
+
+      if (textContent.includes("구매건수")) {
+        singleProduct.purchase = textContent;
+      }
+
+      if (textContent.includes("등록일")) {
+        singleProduct.upload = textContent;
+        //remove 등록일
+        singleProduct.upload = textContent.replace(/등록일/g, "");
+      }
     });
 
     product.push(singleProduct);
@@ -112,22 +130,6 @@ async function scrapeProductTitlesAndPrices(url, page, product, adProduct) {
       singleAdProduct.link = title.href;
     });
 
-    //upload date
-    Array.from(
-      adProductDiv.querySelectorAll('span[class^="adProduct_etc___"]')
-    ).forEach(etc => {
-      singleAdProduct.uploadDate = etc.textContent;
-    });
-
-    //zzim count
-    Array.from(
-      adProductDiv.querySelectorAll(
-        'span[class^="adProduct_zzim__"] > em[class^="adProduct_num__"]'
-      )
-    ).forEach(zzim => {
-      singleAdProduct.zzim = zzim.textContent;
-    });
-
     //price
     Array.from(
       adProductDiv.querySelectorAll('span[class^="price_num"]')
@@ -138,13 +140,15 @@ async function scrapeProductTitlesAndPrices(url, page, product, adProduct) {
     });
 
     //category
-    // Array.from(
-    //   adProductDiv
-    //     .querySelectorAll('div[class^="adProduct_depth__"]')
-    //     .forEach(category => {
-    //       singleAdProduct.category = category.textContent;
-    //     })
-    // );
+    Array.from(
+      adProductDiv.querySelectorAll(
+        'div[class^="adProduct_depth__"] > span[class^="adProduct_category__"]'
+      )
+    ).forEach(category => {
+      if (singleAdProduct.category === undefined) singleAdProduct.category = [];
+      singleAdProduct.category.push(category.textContent);
+    });
+    singleAdProduct.category = singleAdProduct.category.join(" > ");
 
     //mall
     Array.from(
@@ -154,6 +158,35 @@ async function scrapeProductTitlesAndPrices(url, page, product, adProduct) {
       //remove comma
       mall.textContent = mall.textContent.replace(/,/g, "");
       singleAdProduct.mall.push(mall.textContent);
+    });
+
+    // Check additional conditions for fields
+    Array.from(
+      adProductDiv.querySelectorAll(
+        'a[class^="adProduct_etc__"], span[class^="adProduct_etc__"]'
+      )
+    ).forEach(etc => {
+      const textContent = etc.textContent;
+
+      if (textContent.includes("리뷰")) {
+        singleAdProduct.review = textContent;
+      }
+
+      if (textContent.includes("찜하기")) {
+        singleAdProduct.zzim = textContent;
+        //remove 찜하기
+        singleAdProduct.zzim = textContent.replace(/찜하기/g, "");
+      }
+
+      if (textContent.includes("구매건수")) {
+        singleAdProduct.purchase = textContent;
+      }
+
+      if (textContent.includes("등록일")) {
+        singleAdProduct.uploadDate = textContent;
+        //remove 등록일
+        singleAdProduct.uploadDate = textContent.replace(/등록일/g, "");
+      }
     });
 
     //img
@@ -220,13 +253,13 @@ const mainFn = async () => {
 
   //페이지 어디서부터 어디까지 긁은건지 확인하기 위해
   // i = 1페이지부터 2페이지까지 긁어보겠다.
-  for (let i = 1; i <= 2; i++) {
+  for (let i = 1; i <= 1; i++) {
     console.log(i, "Page Crawl Start!");
 
     await scrapeProductTitlesAndPrices(
       //여기서 키워드 변경하면 됩니다.
       //1장에 80개 들어감
-      `https://search.shopping.naver.com/search/all?pagingIndex=${i}&pagingSize=80&productSet=total&query=쥬얼리`,
+      `https://search.shopping.naver.com/search/all?pagingIndex=${i}&pagingSize=80&productSet=total&query=팔찌`,
       page,
       product,
       adProduct
